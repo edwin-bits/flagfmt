@@ -1,0 +1,15 @@
+{
+  "name": "flagfmt",
+  "version": "0.1.0",
+  "description": "Normalize messy feature-flag JSON into a canonical, diff-friendly form",
+  "type": "module",
+  "bin": {
+    "flagfmt": "./dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc"
+  },
+  "license": "MIT",
+  "dependencies": {},
+  "devDependencies": {}
+}
