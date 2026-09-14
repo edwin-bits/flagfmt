@@ -57,6 +57,15 @@ it's meant to be used in a pipeline, e.g. piping a flag file fetched from a
 remote config store straight through the formatter before diffing it
 against what's checked in.
 
+Use `--check` to verify a file is already canonical without printing
+anything. It exits 1 if formatting the file would change it (wrong key
+order, non-boolean-typed booleans, comments, whatever), 0 if it wouldn't.
+Useful as a CI step or pre-commit hook:
+
+```
+flagfmt --check flags.json
+```
+
 If two keys normalize to the same name (`newCheckout` and `new_checkout` in
 the same file, say), flagfmt keeps the later one and prints a warning to
 stderr rather than failing outright.
