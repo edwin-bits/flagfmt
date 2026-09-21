@@ -66,6 +66,20 @@ Useful as a CI step or pre-commit hook:
 flagfmt --check flags.json
 ```
 
+`--check` also accepts a directory or a glob pattern, to sweep a whole repo
+of flag files in one CI step. Directories are searched recursively for
+`.json` files; globs support `*` and `?`:
+
+```
+flagfmt --check config/flags/
+flagfmt --check 'config/flags/*.json'
+```
+
+It exits 1 if any matched file isn't canonical, printing which ones to
+stderr. Normalizing (rather than just checking) more than one file at a
+time isn't supported yet - that needs an in-place write mode, which is next
+on the list.
+
 If two keys normalize to the same name (`newCheckout` and `new_checkout` in
 the same file, say), flagfmt keeps the later one and prints a warning to
 stderr rather than failing outright.
