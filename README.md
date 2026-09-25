@@ -50,12 +50,18 @@ it doesn't guess at what a flag's value means.
 ```
 flagfmt flags.json > flags.json.tmp && mv flags.json.tmp flags.json
 cat flags.json | flagfmt
+flagfmt --write flags.json
 ```
 
 With no file argument, `flagfmt` reads from stdin. That's the primary way
 it's meant to be used in a pipeline, e.g. piping a flag file fetched from a
 remote config store straight through the formatter before diffing it
 against what's checked in.
+
+Use `--write` to normalize a file in place instead of printing to stdout.
+It only touches the file if normalizing it would actually change something,
+and it requires exactly one file argument - it doesn't support stdin,
+directories, or globs yet.
 
 Use `--check` to verify a file is already canonical without printing
 anything. It exits 1 if formatting the file would change it (wrong key
@@ -76,9 +82,9 @@ flagfmt --check 'config/flags/*.json'
 ```
 
 It exits 1 if any matched file isn't canonical, printing which ones to
-stderr. Normalizing (rather than just checking) more than one file at a
-time isn't supported yet - that needs an in-place write mode, which is next
-on the list.
+stderr. `--write` normalizes a single file in place, but directory and glob
+arguments still only work with `--check` - extending `--write` to more than
+one file at a time is next on the list.
 
 If two keys normalize to the same name (`newCheckout` and `new_checkout` in
 the same file, say), flagfmt keeps the later one and prints a warning to

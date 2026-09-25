@@ -1,12 +1,12 @@
 #!/usr/bin/env node
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 import { parseLenient, normalizeFlags, formatCanonical } from "./index.js";
 
 function printUsage(): void {
   process.stdout.write(
     [
-      "usage: flagfmt [--check] [file | dir | glob ...]",
+      "usage: flagfmt [--check | --write] [file | dir | glob ...]",
       "",
       "Reads a feature-flag definition file and writes a canonical,",
       "alphabetically-sorted JSON version of it to stdout.",
@@ -34,6 +34,12 @@ function printUsage(): void {
       "with status 1 if any input would change, 0 if none would:",
       "",
       "  flagfmt --check flags.json",
+      "",
+      "--write normalizes a single file in place instead of printing to",
+      "stdout. It requires exactly one file argument (stdin can't be",
+      "written back to):",
+      "",
+      "  flagfmt --write flags.json",
       "",
     ].join("\n")
   );
@@ -142,11 +148,24 @@ function main(): void {
   }
 
   const check = args.includes("--check");
-  const positional = args.filter((a) => a !== "--check");
+  const write = args.includes("--write");
+  const positional = args.filter((a) => a !== "--check" && a !== "--write");
   const files = positional.length > 0 ? resolveInputs(positional) : [];
+
+  if (check && write) {
+    process.stderr.write("flagfmt: --check and --write can't be used together\n");
+    process.exitCode = 1;
+    return;
+  }
 
   if (positional.length > 0 && files.length === 0) {
     process.stderr.write(`flagfmt: no files matched ${positional.join(", ")}\n`);
+    process.exitCode = 1;
+    return;
+  }
+
+  if (write && files.length !== 1) {
+    process.stderr.write("flagfmt: --write requires exactly one file argument\n");
     process.exitCode = 1;
     return;
   }
@@ -187,6 +206,13 @@ function main(): void {
     if (outcome.source !== outcome.canonical) {
       process.stderr.write(`flagfmt: ${path ?? "(stdin)"} is not canonical\n`);
       process.exitCode = 1;
+    }
+    return;
+  }
+
+  if (write) {
+    if (outcome.source !== outcome.canonical) {
+      writeFileSync(path!, outcome.canonical);
     }
     return;
   }
