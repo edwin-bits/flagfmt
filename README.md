@@ -59,9 +59,10 @@ remote config store straight through the formatter before diffing it
 against what's checked in.
 
 Use `--write` to normalize a file in place instead of printing to stdout.
-It only touches the file if normalizing it would actually change something,
-and it requires exactly one file argument - it doesn't support stdin,
-directories, or globs yet.
+It only touches a file if normalizing it would actually change something.
+It accepts files, directories and globs (see below) but not stdin. A file
+that fails to parse is reported on stderr and skipped, the rest are still
+written, and the exit status is 1.
 
 Use `--check` to verify a file is already canonical without printing
 anything. It exits 1 if formatting the file would change it (wrong key
@@ -72,19 +73,18 @@ Useful as a CI step or pre-commit hook:
 flagfmt --check flags.json
 ```
 
-`--check` also accepts a directory or a glob pattern, to sweep a whole repo
-of flag files in one CI step. Directories are searched recursively for
-`.json` files; globs support `*` and `?`:
+`--check` and `--write` also accept a directory or a glob pattern, to sweep
+a whole repo of flag files in one step. Directories are searched recursively
+for `.json` files; globs support `*` and `?`:
 
 ```
 flagfmt --check config/flags/
 flagfmt --check 'config/flags/*.json'
+flagfmt --write config/flags/
 ```
 
-It exits 1 if any matched file isn't canonical, printing which ones to
-stderr. `--write` normalizes a single file in place, but directory and glob
-arguments still only work with `--check` - extending `--write` to more than
-one file at a time is next on the list.
+`--check` exits 1 if any matched file isn't canonical, printing which ones
+to stderr. Without either flag, only a single file can be printed to stdout.
 
 If two keys normalize to the same name (`newCheckout` and `new_checkout` in
 the same file, say), flagfmt keeps the later one and prints a warning to

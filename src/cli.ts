@@ -26,8 +26,8 @@ function printUsage(): void {
       "  flagfmt --check config/flags/",
       "  flagfmt --check 'config/flags/*.json'",
       "",
-      "Normalizing more than one file at a time isn't supported yet, so",
-      "directory and glob arguments only work together with --check.",
+      "Printing to stdout only works for a single file, so directory and",
+      "glob arguments need --check or --write.",
       "",
       "--check reports whether the input is already in canonical form",
       "instead of printing it. It writes nothing to stdout and exits",
@@ -35,11 +35,14 @@ function printUsage(): void {
       "",
       "  flagfmt --check flags.json",
       "",
-      "--write normalizes a single file in place instead of printing to",
-      "stdout. It requires exactly one file argument (stdin can't be",
-      "written back to):",
+      "--write normalizes files in place instead of printing to stdout.",
+      "It requires at least one file, directory or glob argument (stdin",
+      "can't be written back to). Files that are already canonical are",
+      "left untouched, and files that fail to parse are reported and",
+      "skipped, with exit status 1:",
       "",
       "  flagfmt --write flags.json",
+      "  flagfmt --write config/flags/",
       "",
     ].join("\n")
   );
@@ -164,17 +167,35 @@ function main(): void {
     return;
   }
 
-  if (write && files.length !== 1) {
-    process.stderr.write("flagfmt: --write requires exactly one file argument\n");
+  if (write && files.length === 0) {
+    process.stderr.write("flagfmt: --write requires at least one file argument\n");
     process.exitCode = 1;
     return;
   }
 
-  if (files.length > 1 && !check) {
+  if (files.length > 1 && !check && !write) {
     process.stderr.write(
-      "flagfmt: multiple input files given; only --check supports more than one file right now\n"
+      "flagfmt: multiple input files given; use --check or --write to process more than one\n"
     );
     process.exitCode = 1;
+    return;
+  }
+
+  if (write) {
+    // A file that fails to parse is skipped, not aborted on, so one bad file
+    // doesn't keep the rest of a directory from being formatted.
+    let anyFailed = false;
+    for (const file of files) {
+      const outcome = process_(file);
+      if (outcome === null) {
+        anyFailed = true;
+        continue;
+      }
+      if (outcome.source !== outcome.canonical) {
+        writeFileSync(file, outcome.canonical);
+      }
+    }
+    process.exitCode = anyFailed ? 1 : 0;
     return;
   }
 
@@ -206,13 +227,6 @@ function main(): void {
     if (outcome.source !== outcome.canonical) {
       process.stderr.write(`flagfmt: ${path ?? "(stdin)"} is not canonical\n`);
       process.exitCode = 1;
-    }
-    return;
-  }
-
-  if (write) {
-    if (outcome.source !== outcome.canonical) {
-      writeFileSync(path!, outcome.canonical);
     }
     return;
   }
